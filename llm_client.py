@@ -6,6 +6,7 @@ deepseek-r1, etc.) which return output in a separate 'thinking' field.
 """
 
 import json
+import os
 import time
 import urllib.request
 import urllib.error
@@ -53,7 +54,7 @@ class OllamaClient:
             data=body,
             headers={
                 "Content-Type": "application/json",
-                "Authorization": "Bearer sk-f8828ce83f1c4fd89b4bb4b6edcfd13a",
+                "Authorization": f"Bearer {os.getenv('OLLAMA_API_KEY')}",
             },
             method="POST",
         )

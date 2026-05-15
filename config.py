@@ -4,11 +4,12 @@ Change values here; don't hardcode them elsewhere.
 """
 
 from pathlib import Path
+import os
 
 ROOT_DIR = Path(__file__).parent
 
 # ── Ollama API ──────────────────────────────────────────────────────────────
-OLLAMA_BASE_URL   = "https://genai-01.uni-hildesheim.de/ollama"
+OLLAMA_BASE_URL   = os.getenv("OLLAMA_BASE_URL")
 OLLAMA_MODEL      = "gpt-oss:120b"  #"gemma4:31b"
 IS_THINKING_MODEL = True
 OLLAMA_TIMEOUT    = 300
