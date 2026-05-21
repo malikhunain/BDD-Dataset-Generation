@@ -3,6 +3,8 @@ llm_client.py — Thin client for the university Ollama server.
 
 Handles both standard models and thinking/reasoning models (qwen3-next,
 deepseek-r1, etc.) which return output in a separate 'thinking' field.
+All network errors are caught and wrapped as OllamaError so the generator
+loop can handle them gracefully instead of crashing.
 """
 
 import json
@@ -37,10 +39,7 @@ class OllamaClient:
     def generate(self, prompt: str) -> tuple[str, float]:
         """
         Send a prompt and return (response_text, elapsed_seconds).
-
-        For thinking models the actual output is in data['response'].
-        If response is empty (token budget exhausted by thinking chain),
-        we fall back to extracting the last code blocks from data['thinking'].
+        All network/timeout errors are raised as OllamaError — never crash the pipeline.
         """
         payload = {
             "model":   self.model,
@@ -76,9 +75,27 @@ class OllamaClient:
             ) from e
 
         except urllib.error.URLError as e:
+            # urllib wraps most socket errors — but not always on Windows
             raise OllamaError(
                 f"Cannot reach Ollama server at {self._generate_url}: {e.reason}\n"
                 "Are you on the university network / VPN?"
+            ) from e
+
+        except (TimeoutError, ConnectionResetError, ConnectionAbortedError) as e:
+            # On Windows, ssl/socket timeouts bubble up as bare TimeoutError
+            # instead of being wrapped in urllib.error.URLError.
+            raise OllamaError(
+                f"Connection timed out or was reset after {self.timeout}s: {e}\n"
+                f"Options:\n"
+                f"  1. Increase OLLAMA_TIMEOUT in config.py (currently {self.timeout}s)\n"
+                f"  2. Run again with --resume to skip already-generated problems\n"
+                f"  3. Reduce num_predict in OLLAMA_OPTIONS if the model is too slow"
+            ) from e
+
+        except OSError as e:
+            # Catch any remaining socket-level errors not covered above
+            raise OllamaError(
+                f"Network/socket error communicating with Ollama server: {e}"
             ) from e
 
         text = self._extract_text(data, elapsed)
@@ -93,15 +110,15 @@ class OllamaClient:
           data['thinking']  — internal chain-of-thought (thinking models only)
           data['done_reason'] — 'stop' = normal, 'length' = token limit hit
         """
-        response  = data.get("response", "").strip()
-        thinking  = data.get("thinking", "").strip()
+        response    = data.get("response", "").strip()
+        thinking    = data.get("thinking", "").strip()
         done_reason = data.get("done_reason", "stop")
 
-        # ── Case 1: normal output ─────────────────────────────────────────
+        # Case 1: normal output
         if response:
             return response
 
-        # ── Case 2: thinking model ran out of tokens before writing response
+        # Case 2: thinking model ran out of tokens before writing response
         if done_reason == "length" and thinking:
             print(
                 f"    [llm_client] WARNING: Token limit hit during thinking. "
@@ -112,7 +129,6 @@ class OllamaClient:
             if extracted:
                 print(f"    [llm_client] Extracted {len(extracted)} chars from thinking chain.")
                 return extracted
-            # If extraction failed, increase num_predict in config.py
             raise OllamaError(
                 "Token limit exhausted during thinking and no usable output found.\n"
                 f"Thinking chain was {len(thinking)} chars long.\n"
@@ -121,7 +137,7 @@ class OllamaClient:
                 "and add 'think: False' to OLLAMA_OPTIONS."
             )
 
-        # ── Case 3: empty for unknown reason ─────────────────────────────
+        # Case 3: empty for unknown reason
         raise OllamaError(
             f"Empty response from model. done_reason='{done_reason}'. "
             f"Full data keys: {list(data.keys())}"
@@ -161,22 +177,16 @@ class OllamaClient:
 
 def _extract_from_thinking(thinking: str) -> Optional[str]:
     """
-    When a thinking model runs out of tokens, the actual output never gets
-    written. However, the thinking chain sometimes contains the answer
-    embedded within it as the model was composing it.
-
-    Look for the last occurrence of gherkin + python code blocks in the
-    thinking text, which represents the model's most refined attempt.
+    When a thinking model runs out of tokens before writing its response,
+    extract the last gherkin + python code blocks from the thinking chain.
     """
     import re
 
-    # Find all gherkin blocks
     gherkin_blocks = re.findall(
         r"```(?:gherkin|feature)\s*\n(.*?)```",
         thinking,
         re.DOTALL | re.IGNORECASE,
     )
-    # Find all python blocks
     python_blocks = re.findall(
         r"```(?:python|py)\s*\n(.*?)```",
         thinking,
@@ -184,7 +194,6 @@ def _extract_from_thinking(thinking: str) -> Optional[str]:
     )
 
     if gherkin_blocks and python_blocks:
-        # Take the last of each (most complete version)
         feature = gherkin_blocks[-1].strip()
         steps   = python_blocks[-1].strip()
         return (
