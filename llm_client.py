@@ -11,6 +11,7 @@ import time
 import urllib.request
 import urllib.error
 from typing import Optional
+from dotenv import load_dotenv
 
 from config import (
     OLLAMA_BASE_URL, OLLAMA_MODEL, OLLAMA_TIMEOUT,
@@ -47,6 +48,7 @@ class OllamaClient:
             "stream":  False,
             "options": self.options,
         }
+        api_key = os.getenv('OLLAMA_API_KEY')
 
         body = json.dumps(payload).encode("utf-8")
         req  = urllib.request.Request(
@@ -54,7 +56,7 @@ class OllamaClient:
             data=body,
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {os.getenv('OLLAMA_API_KEY')}",
+                "Authorization": f"Bearer {api_key}",
             },
             method="POST",
         )

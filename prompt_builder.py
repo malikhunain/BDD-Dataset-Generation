@@ -301,20 +301,51 @@ def build_prompt(problem: ProblemRecord) -> str:
         "══════════════════════════════════════════════════════"
     )
 
-    examples_str = "\n".join(
-        f"                {e}" for e in problem.docstring_examples[:6]
-    )
+
+    # ── Docstring examples ────────────────────────────────────────────────────
+    examples_str = "\n".join(f"  {e}" for e in problem.docstring_examples[:6])
     if not examples_str.strip():
-        examples_str = "                (no examples provided — infer from function signature)"
+        examples_str = "  (no examples provided — infer from function signature)"
+
+    # ── Existing tests from dataset ───────────────────────────────────────────
+    # These are the problem author's own assertions — the gold standard for what
+    # inputs and outputs are correct. Scenarios MUST cover these inputs.
+    if problem.existing_tests:
+        tests_lines = "\n".join(f"  {t}" for t in problem.existing_tests[:8])
+        tests_block = (
+            "Existing tests from dataset "
+            "(your scenarios MUST cover these inputs and expected values):\n"
+            + tests_lines + "\n\n"
+        )
+    else:
+        tests_block = ""
+
+    # ── Reference solution ────────────────────────────────────────────────────
+    # Use this to trace the logic and compute exact expected values.
+    # DO NOT copy it into the feature file or step definitions.
+    solution_lines = problem.reference_solution.strip().splitlines()
+    solution_preview = "\n".join(solution_lines[:60])
+    if len(solution_lines) > 60:
+        solution_preview += "\n  # ... (truncated)"
+    solution_block = (
+        "Reference solution "
+        "(trace this to verify expected values — do NOT copy into your output):\n"
+        "```python\n"
+        + solution_preview
+        + "\n```\n\n"
+    )
 
     target = (
         f"YOUR TASK — {problem.problem_id}\n\n"
         f"Function name : {problem.function_name}\n"
         f"Signature     : {problem.function_signature}\n"
-        f"Description   : {problem.nl_description}\n"
-        f"Examples      :\n{examples_str}\n\n"
+        f"Description   : {problem.nl_description}\n\n"
+        f"Examples from docstring:\n{examples_str}\n\n"
+        f"{tests_block}"
+        f"{solution_block}"
         f"Remember:\n"
-        f"  - Trace the function logic mentally for EVERY expected value\n"
+        f"  - Trace the reference solution for EVERY expected value — wrong values are the #1 failure\n"
+        f"  - Cover ALL inputs in Existing tests above, plus additional edge cases\n"
         f"  - Use math.isclose() if the function returns a float\n"
         f"  - Copy load_solution() EXACTLY as shown — no variations\n"
         f"  - Step patterns must match feature file text word for word\n"

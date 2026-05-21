@@ -10,9 +10,9 @@ ROOT_DIR = Path(__file__).parent
 
 # ── Ollama API ──────────────────────────────────────────────────────────────
 OLLAMA_BASE_URL   = os.getenv("OLLAMA_BASE_URL")
-OLLAMA_MODEL      = "gpt-oss:120b"  #"gemma4:31b"
+OLLAMA_MODEL      = "gemma4:31b"   #"qwen3:32b"   #"llama4:latest"  #"gpt-oss:120b"  #
 IS_THINKING_MODEL = True
-OLLAMA_TIMEOUT    = 300
+OLLAMA_TIMEOUT    = 400
 OLLAMA_OPTIONS    = {
     "temperature": 0.2,
     "num_predict": 16384,
@@ -35,8 +35,8 @@ LOGS_DIR        = ROOT_DIR / "logs"
 VALIDATED_DATASET_DIR = ROOT_DIR / "validated_dataset"
 
 # ── Generation limits ───────────────────────────────────────────────────────
-HUMANEVAL_LIMIT  = 100
-MBPP_LIMIT       = 100
+HUMANEVAL_LIMIT  = 164
+MBPP_LIMIT       = 974
 TARGET_SCENARIOS = 5
 
 # ── Validation ──────────────────────────────────────────────────────────────
