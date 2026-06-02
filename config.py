@@ -5,18 +5,21 @@ Change values here; don't hardcode them elsewhere.
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file
 
 ROOT_DIR = Path(__file__).parent
 
 # ── Ollama API ──────────────────────────────────────────────────────────────
 OLLAMA_BASE_URL   = os.getenv("OLLAMA_BASE_URL")
-OLLAMA_MODEL      = "gemma4:31b"   #"qwen3:32b"   #"llama4:latest"  #"gpt-oss:120b"  #
+OLLAMA_MODEL      = "gpt-oss:120b"    #"gemma4:31b"   #"qwen3:32b"   #"llama4:latest"  #"gpt-oss:120b"  #
 IS_THINKING_MODEL = True
 OLLAMA_TIMEOUT    = 400
 OLLAMA_OPTIONS    = {
     "temperature": 0.2,
     "num_predict": 16384,
     "top_p": 0.9,
+    "num_ctx": 32768,
 }
 
 # ── Dataset files ───────────────────────────────────────────────────────────

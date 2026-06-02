@@ -14,6 +14,8 @@ import urllib.request
 import urllib.error
 from typing import Optional
 from dotenv import load_dotenv
+import re
+load_dotenv()  # Load environment variables from .env file
 
 from config import (
     OLLAMA_BASE_URL, OLLAMA_MODEL, OLLAMA_TIMEOUT,
@@ -42,9 +44,9 @@ class OllamaClient:
         All network/timeout errors are raised as OllamaError — never crash the pipeline.
         """
         payload = {
-            "model":   self.model,
-            "prompt":  prompt,
-            "stream":  False,
+            "model": self.model,
+            "prompt": prompt,
+            "stream": False,
             "options": self.options,
         }
         api_key = os.getenv('OLLAMA_API_KEY')
@@ -113,6 +115,11 @@ class OllamaClient:
         response    = data.get("response", "").strip()
         thinking    = data.get("thinking", "").strip()
         done_reason = data.get("done_reason", "stop")
+
+         # Strip inline <think>...</think> blocks (Qwen3 Mode B output)
+        if "<think>" in response:
+            response = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL).strip()
+
 
         # Case 1: normal output
         if response:

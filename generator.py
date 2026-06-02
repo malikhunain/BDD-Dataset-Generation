@@ -83,6 +83,12 @@ def run_single(
     """
     gen_time_total = 0.0
 
+    # Temperature schedule: low on first attempt for determinism,
+    # escalate on retries to break the model out of memorised completions.
+    # At temperature 0.2 a hallucinating model produces identical output
+    # every retry — escalation is the only way to get a different result.
+    _retry_temperatures = [0.2, 0.7, 0.9]
+
     for retry in range(MAX_RETRIES + 1):
         if retry > 0:
             print(f"    Retry {retry}/{MAX_RETRIES} for {problem.problem_id}...")
@@ -90,7 +96,12 @@ def run_single(
         # ── Step 1: Build prompt ─────────────────────────────────────────────
         prompt = build_prompt(problem)
 
-        # ── Step 2: Call LLM ─────────────────────────────────────────────────
+        # ── Step 2: Call LLM (with escalating temperature on retries) ───────
+        retry_temp = _retry_temperatures[min(retry, len(_retry_temperatures) - 1)]
+        if retry > 0:
+            # Temporarily override temperature for this call only
+            original_options = dict(client.options)
+            client.options["temperature"] = retry_temp
         try:
             raw, gen_time = client.generate(prompt)
             gen_time_total += gen_time
@@ -111,6 +122,10 @@ def run_single(
                 error_message=str(e)[:200],
                 retry_count=retry,
             )
+        finally:
+            # Restore original temperature after every call (retry or not)
+            if retry > 0:
+                client.options = original_options
 
         _log_raw(problem, retry, raw)
 
