@@ -10,9 +10,9 @@ load_dotenv()  # Load environment variables from .env file
 
 ROOT_DIR = Path(__file__).parent
 
-# ── Ollama API ──────────────────────────────────────────────────────────────
+# Ollama API
 OLLAMA_BASE_URL   = os.getenv("OLLAMA_BASE_URL")
-OLLAMA_MODEL      = "gpt-oss:120b"    #"gemma4:31b"   #"qwen3:32b"   #"llama4:latest"  #"gpt-oss:120b"  #
+OLLAMA_MODEL      = "gpt-oss:120b"
 IS_THINKING_MODEL = True
 OLLAMA_TIMEOUT    = 400
 OLLAMA_OPTIONS    = {
@@ -22,11 +22,19 @@ OLLAMA_OPTIONS    = {
     "num_ctx": 32768,
 }
 
-# ── Dataset files ───────────────────────────────────────────────────────────
+# Dataset files
 HUMANEVAL_JSONL = ROOT_DIR / "dataset" / "HumanEval.jsonl"
 MBPP_JSONL      = ROOT_DIR / "dataset" / "mbpp.jsonl"
 
-# ── Output directories ──────────────────────────────────────────────────────
+
+# New unified-format dataset (HumanEval_NEW_* and MBPP_NEW_* records)
+# Schema: id, source, source_id, description, entry_point,
+#         solution_code, test_code, tests_passed, validation
+NEW_DATASET_JSONL = ROOT_DIR / "dataset" / "new_dataset.jsonl"
+NEW_DATASET_LIMIT = 500    # set to 0 to skip this dataset
+
+
+# Output directories
 GENERATED_DIR   = ROOT_DIR / "generated"
 RESULTS_DIR     = ROOT_DIR / "results"
 LOGS_DIR        = ROOT_DIR / "logs"
@@ -37,16 +45,16 @@ LOGS_DIR        = ROOT_DIR / "logs"
 # Structure mirrors generated/:  validated_dataset/HumanEval_0/  etc.
 VALIDATED_DATASET_DIR = ROOT_DIR / "validated_dataset"
 
-# ── Generation limits ───────────────────────────────────────────────────────
+# Generation limits
 HUMANEVAL_LIMIT  = 164
 MBPP_LIMIT       = 974
 TARGET_SCENARIOS = 5
 
-# ── Validation ──────────────────────────────────────────────────────────────
+# Validation 
 BEHAVE_TIMEOUT = 30
 
-# ── Retry logic ─────────────────────────────────────────────────────────────
+# Retry logic
 MAX_RETRIES = 2
 
-# ── Logging ─────────────────────────────────────────────────────────────────
+# Logging
 LOG_RAW_RESPONSES = True
