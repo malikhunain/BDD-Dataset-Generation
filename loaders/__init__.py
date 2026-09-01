@@ -1,15 +1,9 @@
-"""
-Compatibility wrapper for dataset loading.
-"""
-
-from records import ProblemRecord
 from loaders.humaneval_loader import load_humaneval
 from loaders.mbpp_loader import load_mbpp, diagnose_mbpp
 from loaders.unified_loader import load_new_dataset
 from loaders.registry import load_all
 
 __all__ = [
-    "ProblemRecord",
     "load_humaneval",
     "load_mbpp",
     "load_new_dataset",
