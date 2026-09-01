@@ -1,9 +1,9 @@
 import re
 from pathlib import Path
-from models import ParsedOutput, ParseError
-from extraction import _extract_blocks
-from validation import _validate_feature, _validate_steps
-from fixers import _fix_steps
+from .models import ParsedOutput, ParseError
+from .extraction import _extract_blocks
+from .validation import _validate_feature, _validate_steps
+from .fixers import _fix_steps
 
 def _problem_dir(problem):
     from config import GENERATED_DIR

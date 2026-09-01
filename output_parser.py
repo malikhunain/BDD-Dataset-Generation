@@ -8,7 +8,8 @@ from parsing.models import (
 )
 from parsing.writer import (
     parse_and_write,
-    count_scenarios
+    count_scenarios,
+    _problem_dir
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "ParseError",
     "parse_and_write",
     "count_scenarios",
+    "_problem_dir",
 ]

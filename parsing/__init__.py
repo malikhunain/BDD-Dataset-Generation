@@ -6,13 +6,14 @@ legacy_parser.py until it is split into extraction, fixing, validation, and
 file-writing modules with golden tests.
 """
 
-from models import (
+from .models import (
     ParsedOutput,
     ParseError
 )
-from writer import (
+from .writer import (
     parse_and_write,
-    count_scenarios
+    count_scenarios,
+    _problem_dir
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "ParseError",
     "parse_and_write",
     "count_scenarios",
+    "_problem_dir"
 ]
