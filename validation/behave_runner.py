@@ -19,8 +19,7 @@ def validate(parsed: ParsedOutput) -> ValidationResult:
     """
     Run Behave on the generated feature file using the reference solution.
 
-    Returns a ValidationResult describing scenario-level and step-level
-    pass/fail behavior.
+    Returns a ValidationResult describing scenario-level and step-level pass/fail behavior.
     """
     features_dir = parsed.feature_path.parent
 

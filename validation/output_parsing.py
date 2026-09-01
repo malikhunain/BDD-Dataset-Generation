@@ -1,8 +1,7 @@
 """
 Parsing utilities for Behave console output.
 
-These parsers convert Behave's plain-format output into a structured
-ValidationResult.
+These parsers convert Behave's plain-format output into a structured ValidationResult.
 """
 
 import re
