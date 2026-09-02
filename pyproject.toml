@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bdd-dataset-pipeline"
+version = "0.1.0"
+description = "BDD dataset processing pipeline"
+
+[tool.setuptools.packages.find]
+include = ["bdd_pipeline*"]
