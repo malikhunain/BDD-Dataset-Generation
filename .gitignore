@@ -1,24 +1,28 @@
-# ── Generated data (large, not committed) ─────────────────────────────────────
+# Generated data (large, not committed)
 dataset/
 generated/
 validated_dataset/
 logs/
 results/
+enhanced_dataset/
+quality_dataset/
+validated_dataset_from_human_mbpp/
 
-# ── Python cache ───────────────────────────────────────────────────────────────
+
+# Python cache
 __pycache__/
 *.py[cod]
 *$py.class
 *.pyo
 .pytest_cache/
 
-# ── Virtual environments ───────────────────────────────────────────────────────
+# Virtual environments
 .venv/
 venv/
 env/
 ENV/
 
-# ── IDE / editor ───────────────────────────────────────────────────────────────
+# IDE / editor
 .vscode/
 .idea/
 *.swp
@@ -26,12 +30,12 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# ── Secrets / environment files ────────────────────────────────────────────────
+# Secrets / environment files
 .env
 .env.*
 secrets.py
 
-# ── Distribution / packaging ───────────────────────────────────────────────────
+# Distribution / packaging
 dist/
 build/
 *.egg-info/
