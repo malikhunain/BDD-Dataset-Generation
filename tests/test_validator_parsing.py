@@ -1,4 +1,4 @@
-from validation.output_parsing import parse_behave_output
+from bdd_pipeline.validation.output_parsing import parse_behave_output
 
 
 def test_passing_behave_output():

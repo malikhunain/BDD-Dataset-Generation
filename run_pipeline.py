@@ -26,7 +26,7 @@ def cmd_list_models() -> None:
     """
     List models available on the Ollama server.
     """
-    from llm_client import OllamaClient, OllamaError
+    from bdd_pipeline.llm import OllamaClient, OllamaError
 
     client = OllamaClient()
 
@@ -48,7 +48,7 @@ def cmd_check_data() -> None:
     """
     Verify that HumanEval and MBPP dataset files are readable.
     """
-    from data_loader import load_humaneval, load_mbpp
+    from bdd_pipeline.loaders import load_humaneval, load_mbpp
 
     print("Checking HumanEval...")
 
@@ -77,7 +77,7 @@ def cmd_diagnose_mbpp() -> None:
     """
     Explain why MBPP rows are accepted or skipped.
     """
-    from data_loader import diagnose_mbpp
+    from bdd_pipeline.loaders import diagnose_mbpp
 
     diagnose_mbpp()
 
@@ -172,7 +172,7 @@ def main(argv: Optional[List[str]] = None) -> None:
         cmd_diagnose_mbpp()
         return
 
-    from generator import run_pipeline
+    from bdd_pipeline.orchestration import run_pipeline
 
     run_pipeline(
         humaneval_limit=args.humaneval_limit,

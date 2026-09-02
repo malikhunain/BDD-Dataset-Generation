@@ -35,7 +35,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from revalidation import (
+from bdd_pipeline.revalidation import (
     DiscoveredProblem,
     discover_problems,
     load_failed_ids,

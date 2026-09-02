@@ -1,7 +1,7 @@
 import pytest
 
-from llm.errors import OllamaError
-from llm.response_extraction import (
+from bdd_pipeline.llm.errors import OllamaError
+from bdd_pipeline.llm.response_extraction import (
     extract_from_thinking,
     extract_response_text,
 )

@@ -1,6 +1,6 @@
 import csv
 
-from reporting import Reporter, RunRecord
+from bdd_pipeline.reporting import Reporter, RunRecord
 
 
 def _make_record() -> RunRecord:

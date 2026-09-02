@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from revalidation.discovery import discover_problems
-from revalidation.promotion import move_to_validated
+from bdd_pipeline.revalidation.discovery import discover_problems
+from bdd_pipeline.revalidation.promotion import move_to_validated
 
 
 def _make_valid_problem(tmp_path: Path, name: str) -> Path:
