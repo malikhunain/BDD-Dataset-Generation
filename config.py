@@ -98,3 +98,9 @@ MAX_RETRIES = 2
 # Logging
 # ---------------------------------------------------------------------------
 LOG_RAW_RESPONSES = True
+
+# ---------------------------------------------------------------------------
+# Dataset export
+# ---------------------------------------------------------------------------
+EXPORT_DIR = ROOT_DIR / "enhanced_dataset"
+EXPORT_DATASET_JSONL = EXPORT_DIR / "bdd_dataset.jsonl"
