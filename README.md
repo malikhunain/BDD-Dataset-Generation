@@ -134,7 +134,7 @@ The final exported dataset (`enhanced_dataset/bdd_dataset.jsonl`) contains one J
 
 If you use this pipeline or the resulting dataset in your research, please cite our upcoming paper:
 
-```bibtex
+<!-- ```bibtex
 @misc{bdd_dataset_pipeline_2025,
   title={BDD Dataset Generation Pipeline: Executable Reward Signals for Code Synthesis},
   author={Hunain Murtaza, Marc Hesenius},
@@ -143,7 +143,7 @@ If you use this pipeline or the resulting dataset in your research, please cite 
   journal={GitHub repository},
   howpublished={\url{https://github.com/malikhunain/BDD-Dataset-Generation}}
 }
-```
+``` -->
 
 ## 📝 License
 
