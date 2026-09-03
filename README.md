@@ -1,288 +1,150 @@
-# BDD Dataset Generator
+# BDD Dataset Generation Pipeline
 
-A pipeline for generating **Behavior-Driven Development (BDD)** test specifications for Python coding problems. Given problems from the [HumanEval](https://github.com/openai/human-eval) and [MBPP](https://huggingface.co/datasets/google-research-datasets/mbpp) benchmarks, it uses an LLM (via [Ollama](https://ollama.com)) to generate Gherkin feature files and Python [Behave](https://behave.readthedocs.io/) step definitions, then validates them by executing Behave against the reference solution.
+A robust, modular toolkit for generating, validating, and refining **Behavior-Driven Development (BDD)** test specifications for algorithmic coding problems using Large Language Models (LLMs). 
 
-This pipeline is part of a research project investigating whether BDD-derived reward signals improve LLM code synthesis quality when used for Reinforcement Learning (RL) fine-tuning.
+This pipeline processes problems from the [HumanEval](https://github.com/openai/human-eval) and [MBPP](https://huggingface.co/datasets/google-research-datasets/mbpp) benchmarks, prompts an LLM (via [Ollama](https://ollama.com)) to generate Gherkin `.feature` files and Python [Behave](https://behave.readthedocs.io/) step definitions, and rigorously validates them against reference solutions.
 
----
+## 🔬 Research Context
 
-## How It Works
+This repository is the data-generation engine for a research project investigating **Reinforcement Learning (RL) for code synthesis**. 
+Specifically, it explores whether BDD-derived reward signals (executable Gherkin scenarios) improve LLM code generation quality compared to standard unit-test reward signals. The `validated_dataset/` produced by this pipeline serves as the foundational training corpus for RL fine-tuning pipelines (e.g., using HuggingFace TRL).
 
-```
-HumanEval / MBPP problems
-        ↓
-  LLM (via Ollama)
-        ↓
-  Gherkin .feature file
-  Behave _steps.py file
-        ↓
-  Behave executes against reference solution
-        ↓
-  PASS → moved to validated_dataset/
-  FAIL → stays in generated/ for retry
-```
+## ✨ Key Features
 
-Each entry in `validated_dataset/` is a complete, executable BDD test suite for one coding problem — ready to be used as a reward signal in RL training.
+- **Multi-Dataset Support**: Normalizes HumanEval, MBPP, and custom unified-format datasets into a common `ProblemRecord` schema.
+- **Thinking-Model Support**: Native handling of Ollama thinking/reasoning models (e.g., Qwen, DeepSeek) with automatic chain-of-thought fallback extraction.
+- **Automated Auto-Fixers**: Post-processes LLM outputs to fix common hallucination bugs (e.g., invalid regex escapes, missing `use_step_matcher("re")`, Behave reserved context attributes).
+- **Shared Validation Harness**: A unified Behave runner used across generation, revalidation, and refinement stages.
+- **Tier-2 Behavioral Refinement**: An optional secondary LLM pass that rewrites Gherkin `When` steps to express *user-level behavioral intent* rather than function-call descriptions.
+- **AST-Based Signature Extraction**: Accurately extracts target function signatures from reference solutions, ignoring helper functions.
 
----
+## 🏗️ Architecture & Pipeline Flow
 
-## Project Structure
+![Pipeline Architecture diagram](static/bdd_pipeline_dark_final.svg)
 
-```
-bdd-dataset-generator/
+## 📂 Repository Structure
+
+```text
+bdd_dataset_pipeline/
+├── run_pipeline.py          # Main entry point for dataset generation
+├── revalidate.py            # Re-runs Behave and promotes passing problems
+├── refine_dataset.py        # (Optional) Tier-2 LLM refinement for behavioral intent
+├── export_dataset.py        # Exports validated_dataset/ to JSONL with signatures
 │
-├── config.py             # All settings: Ollama URL, model, paths, limits
-├── data_loader.py        # Loads HumanEval + MBPP from local JSONL files
-├── llm_client.py         # Ollama API client (supports thinking models)
-├── prompt_builder.py     # Builds the generation prompt with few-shot examples
-├── output_parser.py      # Parses LLM output into .feature + _steps.py files
-├── validator.py          # Runs Behave against reference solution
-├── generator.py          # Main orchestration loop
-├── reporter.py           # Writes results CSV + summary statistics
-├── revalidate.py         # Re-runs Behave, moves passing problems to validated_dataset/
-├── run.py                # Entry point
+├── bdd_pipeline/            # Core modular package
+│   ├── loaders/             # HumanEval, MBPP, and custom dataset loaders
+│   ├── prompts/             # Prompt templates and few-shot assets
+│   ├── llm/                 # Ollama client and response extraction
+│   ├── parsing/             # LLM output parsing and auto-fixers
+│   ├── validation/          # Behave execution and output parsing
+│   ├── orchestration/       # Pipeline runner, retry logic, and skip checks
+│   ├── reporting/           # CSV and summary.txt generation
+│   ├── refinement/          # Tier-2 behavioral intent refinement
+│   ├── export/              # JSONL dataset exporter
+│   ├── signatures.py        # AST-based function signature extraction
+│   └── records.py           # ProblemRecord dataclass
 │
-├── dataset/              # PUT YOUR DATA FILES HERE (git-ignored)
-│   ├── HumanEval.jsonl
-│   └── mbpp.jsonl
-│
-├── generated/            # Intermediate output (git-ignored)
-│   └── HumanEval_0/
-│       ├── solution.py
-│       └── features/
-│           ├── has_close_elements.feature
-│           └── steps/
-│               └── has_close_elements_steps.py
-│
-├── validated_dataset/    # Final verified output (git-ignored)
-│   └── HumanEval_0/      # Only problems where all Behave scenarios passed
-│
-├── results/              # CSV reports and summaries (git-ignored)
-│   ├── results.csv
-│   ├── revalidate_results.csv
-│   └── summary.txt
-│
-└── logs/                 # Raw LLM responses for debugging (git-ignored)
-    └── HumanEval_0_attempt0.txt
+├── tools/                   # Standalone utilities and legacy migration scripts
+├── config.py                # Centralized configuration
+├── dataset/                 # Source JSONL files (HumanEval, MBPP)
+├── generated/               # Intermediate LLM outputs
+├── validated_dataset/       # Problems that passed Behave validation
+├── refined_dataset/         # (Optional) Problems with refined behavioral intent
+├── enhanced_dataset/        # Final exported JSONL datasets
+└── results/                 # CSV reports and summaries
 ```
 
----
+## ⚙️ Installation & Setup
 
-## Requirements
-
-- Python 3.10+
-- Access to an [Ollama](https://ollama.com) server with a capable model
-- Tested with: `gpt-oss:120b`, `qwen3.30:30b`
-- For **thinking models** (Qwen3, DeepSeek-R1, etc.): set `IS_THINKING_MODEL = True` and `num_predict >= 16384` in `config.py`
-
+### 1. Environment Setup
+Python 3.10+ is recommended.
 ```bash
-pip install requests behave datasets
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
----
-
-## Setup
-
-### 1. Configure the Ollama server
-
-Open `config.py` and update:
-
-```python
-OLLAMA_BASE_URL   = "https://your-ollama-server/ollama"
-OLLAMA_MODEL      = "gpt-oss:120b"    # exact name shown by --list-models
-IS_THINKING_MODEL = False             # set True for Qwen3, DeepSeek-R1, etc.
+### 2. Configure Ollama
+Create a `.env` file in the root directory:
+```env
+OLLAMA_BASE_URL=https://your-ollama-server/ollama
+OLLAMA_API_KEY=your_api_key_here
 ```
+*Note: You can check available models on your server by running `python run_pipeline.py --list-models`.*
 
-Check which models are available on your server:
-
+### 3. Download Source Datasets
+Place `HumanEval.jsonl` and `mbpp.jsonl` inside the `dataset/` directory. You can fetch them via the `datasets` library:
 ```bash
-python run.py --list-models
+python -c "from datasets import load_dataset; import json; ds = load_dataset('openai/openai_humaneval', split='test'); [open('dataset/HumanEval.jsonl', 'a').write(json.dumps(r) + '\n') for r in ds]"
+python -c "from datasets import load_dataset; import json; ds = load_dataset('google-research-datasets/mbpp', split='train'); [open('dataset/mbpp.jsonl', 'a').write(json.dumps(r) + '\n') for r in ds]"
 ```
 
-### 2. Download the dataset files
+## 🚀 Usage Workflow
 
-**HumanEval**
-
+### Step 1: Generate BDD Specifications
+Run the main pipeline. The generator automatically skips problems already present in `validated_dataset/`.
 ```bash
-python3 -c "
-from datasets import load_dataset; import json
-ds = load_dataset('openai/openai_humaneval', split='test')
-with open('dataset/HumanEval.jsonl', 'w') as f:
-    [f.write(json.dumps(r) + '\n') for r in ds]
-print(f'Saved {len(ds)} problems')
-"
+# Full run
+python run_pipeline.py
+
+# Pilot run (5 problems)
+python run_pipeline.py --humaneval-limit 5 --mbpp-limit 5
+
+# Preview prompts without calling the LLM
+python run_pipeline.py --dry-run
 ```
 
-**MBPP**
-
+### Step 2: Validate and Promote
+Re-run Behave on the `generated/` directory. Passing problems are automatically moved to `validated_dataset/`.
 ```bash
-python3 -c "
-from datasets import load_dataset; import json
-ds = load_dataset('google-research-datasets/mbpp', split='train')
-with open('dataset/mbpp.jsonl', 'w') as f:
-    [f.write(json.dumps(r) + '\n') for r in ds]
-print(f'Saved {len(ds)} problems')
-"
-```
-
-Verify both files are readable:
-
-```bash
-python run.py --check-data
-```
-
----
-
-## Usage
-
-### Step 1 — Generate
-
-```bash
-# Full run: 100 problems from each dataset
-python run.py
-
-# Pilot: 5 problems only (test your setup first)
-python run.py --humaneval-limit 5 --mbpp-limit 5
-
-# Preview the prompt without calling the LLM
-python run.py --dry-run
-
-# Resume an interrupted run (skips problems already in generated/)
-python run.py --resume
-```
-
-> Problems already present in `validated_dataset/` are **always skipped automatically** — no flag needed.
-
-### Step 2 — Validate and promote
-
-Run Behave on everything in `generated/`. Passing problems are automatically moved to `validated_dataset/`:
-
-```bash
-# Validate all → move passing ones
 python revalidate.py
-
-# Validate but do not move anything (inspection only)
-python revalidate.py --no-move
-
-# Only one dataset
-python revalidate.py --source HumanEval
-python revalidate.py --source MBPP
-
-# Specific problems only
-python revalidate.py --ids HumanEval_2 MBPP_603
-
-# Re-validate only the ones that failed last time
-python revalidate.py --failed-only
-
-# Print full Behave output for every failure
-python revalidate.py --verbose
 ```
+*Use `python revalidate.py --no-move` to validate without moving files, or `--failed-only` to retry previous failures.*
 
-### Full workflow
-
+### Step 3: Refine Behavioral Intent (Optional)
+To ensure Gherkin `When` steps express user-level intent rather than function calls, run the Tier-2 refinement pass:
 ```bash
-# 1. Generate
-python run.py --humaneval-limit 100 --mbpp-limit 100
-
-# 2. Validate and promote passing ones automatically
-python revalidate.py
-
-# 3. Inspect failures, optionally fix step files manually
-#    (edit files inside generated/HumanEval_X/features/steps/)
-
-# 4. Re-test the ones you fixed
-python revalidate.py --failed-only
-
-# 5. Generate replacements for anything still failing
-#    (validated_dataset/ entries are skipped automatically)
-python run.py --humaneval-limit 100 --mbpp-limit 100
+python refine_dataset.py
 ```
 
----
-
-## Output Format
-
-### results/results.csv
-
-Written incrementally — safe if the run is interrupted.
-
-| Column               | Description                                                        |
-| -------------------- | ------------------------------------------------------------------ |
-| `problem_id`         | e.g. `HumanEval/0`, `MBPP/602`                                     |
-| `source`             | `HumanEval` or `MBPP`                                              |
-| `function_name`      | e.g. `has_close_elements`                                          |
-| `status`             | `PASS` / `FAIL_PARSE` / `FAIL_BEHAVE` / `FAIL_SYNTAX` / `FAIL_LLM` |
-| `scenarios_passed`   | Behave scenarios that passed                                       |
-| `scenarios_total`    | Total Behave scenarios generated                                   |
-| `scenario_pass_rate` | `scenarios_passed / scenarios_total`                               |
-| `step_pass_rate`     | Step-level pass rate                                               |
-| `generation_time_s`  | Seconds the LLM took                                               |
-| `retry_count`        | LLM retries needed                                                 |
-| `error_message`      | Error detail (if status != PASS)                                   |
-
-### results/revalidate_results.csv
-
-Same columns as above, plus `moved_to_validated` (`True`/`False`).
-
-### validated_dataset/ structure
-
-```
-validated_dataset/
-└── HumanEval_0/
-    ├── solution.py                          # reference solution (ground truth)
-    └── features/
-        ├── has_close_elements.feature       # Gherkin specification
-        └── steps/
-            └── has_close_elements_steps.py  # Behave step definitions
+### Step 4: Export Final Dataset
+Export the validated (or refined) directory into a single JSONL file, enriching it with AST-extracted function signatures.
+```bash
+python export_dataset.py
 ```
 
----
+## 📊 Output Format
 
-## Failure Status Reference
+The final exported dataset (`enhanced_dataset/bdd_dataset.jsonl`) contains one JSON object per line:
 
-| Status         | Meaning                                        | What to do                                                  |
-| -------------- | ---------------------------------------------- | ----------------------------------------------------------- |
-| `PASS`         | All scenarios passed                           | Moved to `validated_dataset/` automatically                 |
-| `FAIL_PARSE`   | LLM output could not be parsed                 | Auto-retried; check `logs/` for raw response                |
-| `FAIL_SYNTAX`  | Step file has Python errors or undefined steps | Edit step file manually, then `revalidate.py --failed-only` |
-| `FAIL_BEHAVE`  | Parsed OK but scenarios failed                 | Wrong expected values; auto-retried                         |
-| `FAIL_LLM`     | Ollama API error or empty response             | Check server; increase `num_predict` for thinking models    |
-| `FAIL_TIMEOUT` | Behave timed out                               | Increase `BEHAVE_TIMEOUT` in `config.py`                    |
+```json
+{
+  "id": "HumanEval_0",
+  "source": "HumanEval",
+  "feature_text": "Feature: Detecting close numbers...",
+  "steps_text": "import ast, importlib.util...",
+  "solution_text": "from typing import List\ndef has_close_elements...",
+  "num_scenarios": 5,
+  "num_steps": 15,
+  "function_signature": "def has_close_elements(numbers: List[float], threshold: float) -> bool:"
+}
+```
 
----
+## 📄 Citation
 
-## Configuration Reference
+If you use this pipeline or the resulting dataset in your research, please cite our upcoming paper:
 
-All settings are in `config.py`.
+```bibtex
+@misc{bdd_dataset_pipeline_2025,
+  title={BDD Dataset Generation Pipeline: Executable Reward Signals for Code Synthesis},
+  author={Hunain Murtaza, Marc Hesenius},
+  year={2025},
+  publisher={GitHub},
+  journal={GitHub repository},
+  howpublished={\url{https://github.com/malikhunain/BDD-Dataset-Generation}}
+}
+```
 
-| Setting             | Default | Description                                     |
-| ------------------- | ------- | ----------------------------------------------- |
-| `OLLAMA_BASE_URL`   | —       | Ollama server URL                               |
-| `OLLAMA_MODEL`      | —       | Model name (use `--list-models` to find it)     |
-| `IS_THINKING_MODEL` | `False` | `True` for Qwen3, DeepSeek-R1 and similar       |
-| `OLLAMA_TIMEOUT`    | `300`   | Seconds per LLM request                         |
-| `num_predict`       | `16384` | Max output tokens; thinking models need ≥ 16384 |
-| `HUMANEVAL_LIMIT`   | `100`   | Max HumanEval problems per run                  |
-| `MBPP_LIMIT`        | `100`   | Max MBPP problems per run                       |
-| `TARGET_SCENARIOS`  | `5`     | Gherkin scenarios to generate per problem       |
-| `MAX_RETRIES`       | `2`     | Retry attempts on failure                       |
-| `BEHAVE_TIMEOUT`    | `30`    | Seconds per Behave execution                    |
-| `LOG_RAW_RESPONSES` | `True`  | Save raw LLM output to `logs/`                  |
+## 📝 License
 
----
-
-## Research Context
-
-This pipeline is part of a 6-month research project (April–September 2025) investigating:
-
-> **Can BDD-derived reward signals improve LLM code synthesis quality when used for Reinforcement Learning fine-tuning, compared to standard unit-test reward signals?**
-
-The `validated_dataset/` produced by this pipeline is the training corpus for an RL fine-tuning pipeline built on [HuggingFace TRL](https://github.com/huggingface/trl) with [Qwen2.5-Coder-7B](https://huggingface.co/Qwen/Qwen2.5-Coder-7B) as the base model. Each Gherkin scenario serves as an executable reward signal: the model generates code, Behave runs the scenarios, and the scenario pass rate becomes the reward.
-
-Related benchmarks used for evaluation: HumanEval+, MBPP+.
-
----
-
-## License
-
-MIT
+This project is licensed under the MIT License. See the `LICENSE` file for details.
