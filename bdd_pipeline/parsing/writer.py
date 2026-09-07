@@ -58,7 +58,3 @@ def parse_and_write(problem, raw_response: str) -> ParsedOutput:
         steps_path=steps_path,
         solution_path=solution_path,
     )
-
-
-def count_scenarios(feature_text: str) -> int:
-    return len(re.findall(r"^\s*Scenario:", feature_text, re.MULTILINE))

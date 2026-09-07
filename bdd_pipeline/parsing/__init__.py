@@ -12,7 +12,6 @@ from bdd_pipeline.parsing.models import (
 )
 from bdd_pipeline.parsing.writer import (
     parse_and_write,
-    count_scenarios,
     _problem_dir
 )
 
@@ -20,6 +19,5 @@ __all__ = [
     "ParsedOutput",
     "ParseError",
     "parse_and_write",
-    "count_scenarios",
     "_problem_dir"
 ]

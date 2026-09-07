@@ -19,10 +19,14 @@ expected function name inferred from the feature/steps files.
 
 import json
 import re
+import subprocess
 from pathlib import Path
 from typing import Dict, Optional
-
-from config import VALIDATED_DATASET_DIR
+from config import VALIDATED_DATASET_DIR, BEHAVE_TIMEOUT
+from bdd_pipeline.signatures import (
+    extract_function_signature,
+    infer_function_name_from_steps,
+)
 
 try:
     from config import EXPORT_DATASET_JSONL
@@ -33,43 +37,41 @@ except ImportError:
         / "bdd_dataset.jsonl"
     )
 
-from bdd_pipeline.signatures import (
-    extract_function_signature,
-    infer_function_name_from_steps,
-)
+def count_scenarios_and_steps(feature_path):
+    result = subprocess.run(
+        [
+            "behave",
+            "--dry-run",
+            feature_path,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=BEHAVE_TIMEOUT
+    )
 
+    output = result.stdout + result.stderr
 
-_SCENARIO_RE = re.compile(
-    r"^\s*Scenario:",
-    re.MULTILINE,
-)
+    t_scenarios = 0
+    t_steps = 0
 
-_STEP_RE = re.compile(
-    r"^\s*(?:Given|When|Then|And|But|\*)\b",
-    re.MULTILINE,
-)
+    for line in output.splitlines():
+        stripped = line.strip()
 
+        if not stripped or not stripped[0].isdigit():
+            continue
 
-def count_scenarios(feature_text: str) -> int:
-    """
-    Count Gherkin scenarios in a feature file.
-    """
-    return len(_SCENARIO_RE.findall(feature_text))
+        match = re.search(r"(\d+)\s+untested", stripped)
+        if not match:
+            continue
 
+        total = int(match.group(1))
 
-def count_steps(feature_text: str) -> int:
-    """
-    Count Gherkin steps in a feature file.
+        if "scenarios" in stripped:
+            t_scenarios = total
+        elif "steps" in stripped:
+            t_steps = total
 
-    Counts lines starting with:
-        Given
-        When
-        Then
-        And
-        But
-        *
-    """
-    return len(_STEP_RE.findall(feature_text))
+    return t_scenarios, t_steps
 
 
 def _infer_source(problem_id: str) -> str:
@@ -127,6 +129,7 @@ def build_dataset_record(problem_dir: Path) -> Optional[Dict]:
     steps_text = steps_path.read_text(encoding="utf-8")
     solution_text = solution_path.read_text(encoding="utf-8")
 
+    t_scenarios, t_steps = count_scenarios_and_steps(feature_path=feature_path)
     function_name_from_feature = feature_path.stem
     function_name_from_steps = infer_function_name_from_steps(steps_text)
 
@@ -149,10 +152,10 @@ def build_dataset_record(problem_dir: Path) -> Optional[Dict]:
         "source": _infer_source(problem_dir.name),
         "feature_text": feature_text,
         "steps_text": steps_text,
-        "solution_text": solution_text,
-        "num_scenarios": count_scenarios(feature_text),
-        "num_steps": count_steps(feature_text),
         "function_signature": function_signature,
+        "solution_text": solution_text,
+        "num_scenarios": t_scenarios,
+        "num_steps": t_steps,
     }
 
 

@@ -10,7 +10,7 @@ from config import MAX_RETRIES
 
 from bdd_pipeline.records import ProblemRecord
 from bdd_pipeline.llm import OllamaClient, OllamaError
-from bdd_pipeline.parsing import ParseError, count_scenarios, parse_and_write
+from bdd_pipeline.parsing import ParseError, parse_and_write
 from bdd_pipeline.prompts import build_prompt
 from bdd_pipeline.reporting import Reporter, RunRecord
 from bdd_pipeline.validation import ValidationResult, validate
@@ -106,13 +106,12 @@ def run_single(
                 retry_count=retry,
             )
 
-        scenario_count = count_scenarios(parsed.feature_content)
         validation: ValidationResult = validate(parsed)
 
         if validation.status == "PASS":
             print(
                 f"    [PASS] {problem.problem_id}  "
-                f"{validation.scenarios_passed}/{scenario_count} scenarios  "
+                f"{validation.scenarios_passed}/{validation.scenarios_total} scenarios  "
                 f"({generation_time_total:.1f}s)"
             )
 
@@ -122,7 +121,7 @@ def run_single(
                 function_name=problem.function_name,
                 status="PASS",
                 scenarios_passed=validation.scenarios_passed,
-                scenarios_total=validation.scenarios_total or scenario_count,
+                scenarios_total=validation.scenarios_total,
                 steps_passed=validation.steps_passed,
                 steps_total=validation.steps_total,
                 scenario_pass_rate=validation.pass_rate,
@@ -135,14 +134,14 @@ def run_single(
         if retry < MAX_RETRIES:
             print(
                 f"    [{validation.status}] {problem.problem_id}: "
-                f"{validation.scenarios_passed}/{scenario_count} scenarios passed. "
+                f"{validation.scenarios_passed}/{validation.scenarios_total} scenarios passed. "
                 f"Error: {validation.error_message[:100]}. Retrying..."
             )
             continue
 
         print(
             f"    [{validation.status}] {problem.problem_id}: "
-            f"{validation.scenarios_passed}/{scenario_count} scenarios passed "
+            f"{validation.scenarios_passed}/{validation.scenarios_total} scenarios passed "
             f"after {retry + 1} attempts. "
             f"Error: {validation.error_message[:100]}"
         )
@@ -153,7 +152,7 @@ def run_single(
             function_name=problem.function_name,
             status=validation.status,
             scenarios_passed=validation.scenarios_passed,
-            scenarios_total=validation.scenarios_total or scenario_count,
+            scenarios_total=validation.scenarios_total,
             steps_passed=validation.steps_passed,
             steps_total=validation.steps_total,
             scenario_pass_rate=validation.pass_rate,
