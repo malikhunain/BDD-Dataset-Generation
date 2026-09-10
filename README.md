@@ -4,6 +4,12 @@ A robust, modular toolkit for generating, validating, and refining **Behavior-Dr
 
 This pipeline processes problems from the [HumanEval](https://github.com/openai/human-eval) and [MBPP](https://huggingface.co/datasets/google-research-datasets/mbpp) benchmarks, prompts an LLM (via [Ollama](https://ollama.com)) to generate Gherkin `.feature` files and Python [Behave](https://behave.readthedocs.io/) step definitions, and rigorously validates them against reference solutions.
 
+## Related resources
+
+- **BDD_DATASET:** [BDD_Dataset](https://github.com/malikhunain/BDD_Dataset)
+- **Zenodo DOI:**  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22645322.svg)](https://doi.org/10.5281/zenodo.22645322)
+- **Paper:** link added once published
+
 ## 🔬 Research Context
 
 This repository is the data-generation engine for a research project investigating **Reinforcement Learning (RL) for code synthesis**. 
@@ -134,16 +140,17 @@ The final exported dataset (`enhanced_dataset/bdd_dataset.jsonl`) contains one J
 
 If you use this pipeline or the resulting dataset in your research, please cite our upcoming paper:
 
-<!-- ```bibtex
-@misc{bdd_dataset_pipeline_2025,
-  title={BDD Dataset Generation Pipeline: Executable Reward Signals for Code Synthesis},
-  author={Hunain Murtaza, Marc Hesenius},
-  year={2025},
-  publisher={GitHub},
-  journal={GitHub repository},
-  howpublished={\url{https://github.com/malikhunain/BDD-Dataset-Generation}}
+```bibtex
+@inproceedings{murtaza2027bdddataset,
+  author    = {Murtaza, Hunain and Hesenius, Marc},
+  title     = {A Behavior-Driven Dataset for Python Code Generation Benchmarks},
+  booktitle = {Proceedings of the 24th International Conference on Mining Software Repositories -- Data and Tool Showcase Track (MSR '27)},
+  year      = {2027},
+  publisher = {ACM},
+  doi       = {10.1145/nnnnnnn.nnnnnnn}
 }
-``` -->
+```
+*(DOI to be updated once assigned.)*
 
 ## 📝 License
 
